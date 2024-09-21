@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Handwriting Recognition</title>
+    <style>
+      /* Canvas styling */
+      canvas {
+        border: 1px solid black;
+        cursor: crosshair;
+      }
+      #controls {
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Draw a Letter or Number</h1>
+
+    <!-- Canvas for drawing -->
+    <canvas id="drawingCanvas" width="280" height="280"></canvas><br />
+
+    <!-- Control buttons -->
+    <div id="controls">
+      <button onclick="clearCanvas()">Clear</button>
+      <button onclick="predict()">Predict</button>
+    </div>
+
+    <!-- Display the prediction result -->
+    <p id="predictionResult">Prediction:</p>
+
+    <script>
+      // Set up canvas and context
+      const canvas = document.getElementById("drawingCanvas");
+      const ctx = canvas.getContext("2d");
+
+      // Variables for drawing state
+      let drawing = false;
+
+      // Function to start drawing when the mouse is pressed down
+      canvas.addEventListener("mousedown", function (e) {
+        drawing = true;
+        ctx.beginPath();
+        ctx.moveTo(e.offsetX, e.offsetY);
+      });
+
+      // Function to stop drawing when the mouse is released
+      canvas.addEventListener("mouseup", function () {
+        drawing = false;
+        ctx.beginPath(); // Reset the path for new strokes
+      });
+
+      // Function to draw while the mouse is moving
+      canvas.addEventListener("mousemove", function (e) {
+        if (drawing) {
+          ctx.lineWidth = 2; // Set line width
+          ctx.lineCap = "round"; // Set round edges for strokes
+          ctx.strokeStyle = "black"; // Set the stroke color to black
+          ctx.lineTo(e.offsetX, e.offsetY); // Draw line to mouse position
+          ctx.stroke(); // Actually draw the line
+          ctx.moveTo(e.offsetX, e.offsetY); // Move the starting point of the next line to the current position
+        }
+      });
+
+      // Function to clear the canvas
+      function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the entire canvas
+        document.getElementById("predictionResult").textContent = "Prediction:"; // Reset prediction text
+      }
+
+      // Function to send the image for prediction
+      function predict() {
+        const dataURL = canvas.toDataURL();  // Convert canvas to base64 image data
+        console.log("Sending image data to the server...");  // Debugging: log the base64 image data
+        
+        // Send the image data to the Flask server for prediction
+        fetch("http://127.0.0.1:5000/predict", {  // Make sure this URL matches your Flask server
+          method: "POST",
+          body: JSON.stringify({ image: dataURL }),  // Send the image in JSON format
+          headers: { "Content-Type": "application/json" }
+        })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Server response:", data);  // Log the server's response
+          document.getElementById("predictionResult").textContent = 'Prediction: ' + data.prediction;  // Display the prediction
+        })
+        .catch((error) => {
+          console.error("Error during prediction request:", error);  // Log any errors
+        });
+      }
+    </script>
+  </body>
+</html>
